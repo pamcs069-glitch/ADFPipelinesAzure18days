@@ -1,0 +1,15 @@
+{
+	"name": "adf-ev-intelligence-devbyprab",
+	"properties": {
+		"trustModeClaimForMi": {
+			"value": "Disabled",
+			"editable": true
+		}
+	},
+	"location": "centralindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "7c0e4700-6eca-4c93-90b6-1a37fff3fbc1",
+		"tenantId": "03669a4d-788c-4963-9626-19e6a3e294b7"
+	}
+}

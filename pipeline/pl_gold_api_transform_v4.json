@@ -1,0 +1,42 @@
+{
+	"name": "pl_gold_api_transform_v4",
+	"properties": {
+		"activities": [
+			{
+				"name": "act_gold_transform",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/Shared/gold_tranformation/04_gold_full_incremental_v3",
+					"baseParameters": {
+						"load_type": {
+							"value": "@pipeline().parameters.p_load_type",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "lsAzureDatabricksWS1",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"p_load_type": {
+				"type": "string",
+				"defaultValue": "full"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2026-07-30T20:23:44Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

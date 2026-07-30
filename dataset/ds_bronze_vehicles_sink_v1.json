@@ -1,0 +1,103 @@
+{
+	"name": "ds_bronze_vehicles_sink_v1",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_adls_bronze",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"p_ingestion_date": {
+				"type": "string"
+			},
+			"p_page": {
+				"type": "int"
+			}
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@concat('page_', string(dataset().p_page), '.json')",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@concat('api/vehicles/raw/ingestion_date=', dataset().p_ingestion_date)",
+					"type": "Expression"
+				},
+				"fileSystem": "bronze"
+			}
+		},
+		"schema": {
+			"type": "object",
+			"properties": {
+				"data": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"id": {
+								"type": "integer"
+							},
+							"payment_id": {
+								"type": "string"
+							},
+							"session_id": {
+								"type": "string"
+							},
+							"customer_id": {
+								"type": "string"
+							},
+							"gateway": {
+								"type": "string"
+							},
+							"amount_aud": {
+								"type": "string"
+							},
+							"gst": {
+								"type": "string"
+							},
+							"payment_mode": {
+								"type": "string"
+							},
+							"status": {
+								"type": "string"
+							},
+							"processed_at": {
+								"type": "string"
+							},
+							"created_at": {
+								"type": "string"
+							},
+							"updated_at": {
+								"type": "string"
+							}
+						}
+					}
+				},
+				"pagination": {
+					"type": "object",
+					"properties": {
+						"page": {
+							"type": "integer"
+						},
+						"page_size": {
+							"type": "integer"
+						},
+						"total": {
+							"type": "integer"
+						},
+						"total_pages": {
+							"type": "integer"
+						}
+					}
+				},
+				"ingestion_date": {
+					"type": "string"
+				}
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

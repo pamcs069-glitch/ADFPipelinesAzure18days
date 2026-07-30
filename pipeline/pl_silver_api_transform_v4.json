@@ -1,0 +1,49 @@
+{
+	"name": "pl_silver_api_transform_v4",
+	"properties": {
+		"activities": [
+			{
+				"name": "act_silver_transform",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/Shared/silver_transformation/04_silver_all_entities_job_params_v4",
+					"baseParameters": {
+						"load_type": {
+							"value": "@pipeline().parameters.p_load_type",
+							"type": "Expression"
+						},
+						"ingestion_date": {
+							"value": "@pipeline().parameters.p_ingestion_date",
+							"type": "Expression"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "lsAzureDatabricksWS1",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"parameters": {
+			"p_load_type": {
+				"type": "string",
+				"defaultValue": "incremental"
+			},
+			"p_ingestion_date": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2026-07-29T21:09:30Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}
