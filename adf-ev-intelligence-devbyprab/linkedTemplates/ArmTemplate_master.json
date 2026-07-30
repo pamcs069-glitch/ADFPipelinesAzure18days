@@ -1,0 +1,104 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "adf-ev-intelligence-devbyprab"
+		},
+		"lsAzureDatabricksWS1_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'lsAzureDatabricksWS1'"
+		},
+		"ls_databricks_workspace_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'ls_databricks_workspace'"
+		},
+		"lsAzureDatabricksWS1_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0703-152117-873tfz4r"
+		},
+		"ls_adls_bronze_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://evdatalakedevbyprab.dfs.core.windows.net/"
+		},
+		"ls_keyvault_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://kv-ev-intelligence-dev-p.vault.azure.net/"
+		},
+		"ls_voltgrid_api_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://ev-project-navy-mu.vercel.app"
+		},
+		"containerUri": {
+			"type": "string",
+			"metadata": "URI to storage account containing linked ARM templates"
+		},
+		"containerSasToken": {
+			"type": "string",
+			"metadata": "Sas token to storage account containing linked ARM templates"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "adf-ev-intelligence-devbyprab_ArmTemplate_0",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"lsAzureDatabricksWS1_accessToken": {
+						"value": "[parameters('lsAzureDatabricksWS1_accessToken')]"
+					},
+					"ls_databricks_workspace_accessToken": {
+						"value": "[parameters('ls_databricks_workspace_accessToken')]"
+					},
+					"lsAzureDatabricksWS1_properties_typeProperties_existingClusterId": {
+						"value": "[parameters('lsAzureDatabricksWS1_properties_typeProperties_existingClusterId')]"
+					},
+					"ls_adls_bronze_properties_typeProperties_url": {
+						"value": "[parameters('ls_adls_bronze_properties_typeProperties_url')]"
+					},
+					"ls_keyvault_properties_typeProperties_baseUrl": {
+						"value": "[parameters('ls_keyvault_properties_typeProperties_baseUrl')]"
+					},
+					"ls_voltgrid_api_properties_typeProperties_url": {
+						"value": "[parameters('ls_voltgrid_api_properties_typeProperties_url')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "adf-ev-intelligence-devbyprab_ArmTemplate_1",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_1.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					}
+				}
+			},
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', 'adf-ev-intelligence-devbyprab_ArmTemplate_0')]"
+			]
+		}
+	]
+}

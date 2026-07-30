@@ -1,0 +1,926 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "adf-ev-intelligence-devbyprab"
+		},
+		"lsAzureDatabricksWS1_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'lsAzureDatabricksWS1'"
+		},
+		"ls_databricks_workspace_accessToken": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessToken' of 'ls_databricks_workspace'"
+		},
+		"lsAzureDatabricksWS1_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0703-152117-873tfz4r"
+		},
+		"ls_adls_bronze_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://evdatalakedevbyprab.dfs.core.windows.net/"
+		},
+		"ls_keyvault_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://kv-ev-intelligence-dev-p.vault.azure.net/"
+		},
+		"ls_voltgrid_api_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://ev-project-navy-mu.vercel.app"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/lsAzureDatabricksWS1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-7405612006307280.0.azuredatabricks.net",
+					"accessToken": {
+						"type": "SecureString",
+						"value": "[parameters('lsAzureDatabricksWS1_accessToken')]"
+					},
+					"existingClusterId": "[parameters('lsAzureDatabricksWS1_properties_typeProperties_existingClusterId')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_adls_bronze')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('ls_adls_bronze_properties_typeProperties_url')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_databricks_workspace')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricksDeltaLake",
+				"typeProperties": {
+					"domain": "https://adb-7405612006307280.0.azuredatabricks.net",
+					"clusterId": "0703-152117-873tfz4r",
+					"accessToken": {
+						"type": "SecureString",
+						"value": "[parameters('ls_databricks_workspace_accessToken')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_keyvault')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('ls_keyvault_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_voltgrid_api')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "RestService",
+				"typeProperties": {
+					"url": "[parameters('ls_voltgrid_api_properties_typeProperties_url')]",
+					"enableServerCertificateValidation": true,
+					"authenticationType": "Anonymous"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/bronze_api_ingest_databricks')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Notebook1",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Shared/bronze_ingestion/01_bronze_api_ingest_databricks",
+							"baseParameters": {
+								"load_type": "incremental"
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "lsAzureDatabricksWS1",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-07-28T21:44:30Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/lsAzureDatabricksWS1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_gold_api_transform_v4')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "act_gold_transform",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Shared/gold_tranformation/04_gold_full_incremental_v3",
+							"baseParameters": {
+								"load_type": {
+									"value": "@pipeline().parameters.p_load_type",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "lsAzureDatabricksWS1",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"p_load_type": {
+						"type": "string",
+						"defaultValue": "full"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-07-30T20:23:44Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/lsAzureDatabricksWS1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_silver_api_transform_v4')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "act_silver_transform",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Shared/silver_transformation/04_silver_all_entities_job_params_v4",
+							"baseParameters": {
+								"load_type": {
+									"value": "@pipeline().parameters.p_load_type",
+									"type": "Expression"
+								},
+								"ingestion_date": {
+									"value": "@pipeline().parameters.p_ingestion_date",
+									"type": "Expression"
+								}
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "lsAzureDatabricksWS1",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"p_load_type": {
+						"type": "string",
+						"defaultValue": "incremental"
+					},
+					"p_ingestion_date": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-07-29T21:09:30Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/lsAzureDatabricksWS1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_silver_blob_invoices')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Notebook1",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Shared/silver_transformation/03_silver_blob_reports_job_params_v3",
+							"baseParameters": {
+								"load_type": "full"
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "lsAzureDatabricksWS1",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-07-30T19:25:52Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/lsAzureDatabricksWS1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_silver_blob_realtime')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Notebook1",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Shared/silver_transformation/03_silver_blob_all_entities_job_params_v3",
+							"baseParameters": {
+								"load_type": "full"
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "lsAzureDatabricksWS1",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-07-30T16:10:05Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/lsAzureDatabricksWS1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_silver_blob_reports')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Notebook1",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Shared/silver_transformation/03_silver_blob_invoices_job_params_v3",
+							"baseParameters": {
+								"load_type": "full"
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "lsAzureDatabricksWS1",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-07-30T18:51:41Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/lsAzureDatabricksWS1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_audit_template_csv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Single-newline file with no columns and no header. Used as source in act_write_audit and act_write_watermark. firstRowAsHeader false, file contains only a newline so ADF reads exactly one empty row. All output columns come entirely from additionalColumns — no Prop_N clash.",
+				"linkedServiceName": {
+					"referenceName": "ls_adls_bronze",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "audit_template.csv",
+						"folderPath": "audit",
+						"fileSystem": "bronze"
+					},
+					"columnDelimiter": ",",
+					"rowDelimiter": "\n",
+					"escapeChar": "\\",
+					"firstRowAsHeader": false,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_adls_bronze')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_bronze_api_sink_v4')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Generic JSON sink dataset for all VoltGrid API entities. entity_name becomes the Bronze folder name. ingestion_date and page drive the partition path. One dataset replaces 18 entity-specific sink datasets.",
+				"linkedServiceName": {
+					"referenceName": "ls_adls_bronze",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"p_entity_name": {
+						"type": "string"
+					},
+					"p_ingestion_date": {
+						"type": "string"
+					},
+					"p_page": {
+						"type": "int"
+					}
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@concat('page_', string(dataset().p_page), '.json')",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@concat('api/', dataset().p_entity_name, '/ingestion_date=', dataset().p_ingestion_date)",
+							"type": "Expression"
+						},
+						"fileSystem": "bronze"
+					}
+				},
+				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_adls_bronze')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_bronze_payments_sink')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_adls_bronze",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "payments.json",
+						"folderPath": "api/payments/raw",
+						"fileSystem": "bronze"
+					}
+				},
+				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_adls_bronze')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_bronze_payments_sink_v2')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_adls_bronze",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"p_ingestion_date": {
+						"type": "string"
+					},
+					"p_page": {
+						"type": "int"
+					}
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@concat('page_', string(dataset().p_page), '.json')",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@concat('api/payments/raw/ingestion_date=', dataset().p_ingestion_date)",
+							"type": "Expression"
+						},
+						"fileSystem": "bronze"
+					}
+				},
+				"schema": {
+					"type": "object",
+					"properties": {
+						"data": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"properties": {
+									"id": {
+										"type": "integer"
+									},
+									"payment_id": {
+										"type": "string"
+									},
+									"session_id": {
+										"type": "string"
+									},
+									"customer_id": {
+										"type": "string"
+									},
+									"gateway": {
+										"type": "string"
+									},
+									"amount_aud": {
+										"type": "string"
+									},
+									"gst": {
+										"type": "string"
+									},
+									"payment_mode": {
+										"type": "string"
+									},
+									"status": {
+										"type": "string"
+									},
+									"processed_at": {
+										"type": "string"
+									},
+									"created_at": {
+										"type": "string"
+									},
+									"updated_at": {
+										"type": "string"
+									}
+								}
+							}
+						},
+						"pagination": {
+							"type": "object",
+							"properties": {
+								"page": {
+									"type": "integer"
+								},
+								"page_size": {
+									"type": "integer"
+								},
+								"total": {
+									"type": "integer"
+								},
+								"total_pages": {
+									"type": "integer"
+								}
+							}
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_adls_bronze')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_bronze_payments_sink_v3')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_adls_bronze",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"p_ingestion_date": {
+						"type": "string"
+					},
+					"p_page": {
+						"type": "int"
+					}
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@concat('page_', string(dataset().p_page), '.json')",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@concat('api/payments/raw/ingestion_date=', dataset().p_ingestion_date)",
+							"type": "Expression"
+						},
+						"fileSystem": "bronze"
+					}
+				},
+				"schema": {
+					"type": "object",
+					"properties": {
+						"data": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"properties": {
+									"id": {
+										"type": "integer"
+									},
+									"payment_id": {
+										"type": "string"
+									},
+									"session_id": {
+										"type": "string"
+									},
+									"customer_id": {
+										"type": "string"
+									},
+									"gateway": {
+										"type": "string"
+									},
+									"amount_aud": {
+										"type": "string"
+									},
+									"gst": {
+										"type": "string"
+									},
+									"payment_mode": {
+										"type": "string"
+									},
+									"status": {
+										"type": "string"
+									},
+									"processed_at": {
+										"type": "string"
+									},
+									"created_at": {
+										"type": "string"
+									},
+									"updated_at": {
+										"type": "string"
+									}
+								}
+							}
+						},
+						"pagination": {
+							"type": "object",
+							"properties": {
+								"page": {
+									"type": "integer"
+								},
+								"page_size": {
+									"type": "integer"
+								},
+								"total": {
+									"type": "integer"
+								},
+								"total_pages": {
+									"type": "integer"
+								}
+							}
+						},
+						"ingestion_date": {
+							"type": "string"
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_adls_bronze')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_bronze_vehicles_sink_v1')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_adls_bronze",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"p_ingestion_date": {
+						"type": "string"
+					},
+					"p_page": {
+						"type": "int"
+					}
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@concat('page_', string(dataset().p_page), '.json')",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@concat('api/vehicles/raw/ingestion_date=', dataset().p_ingestion_date)",
+							"type": "Expression"
+						},
+						"fileSystem": "bronze"
+					}
+				},
+				"schema": {
+					"type": "object",
+					"properties": {
+						"data": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"properties": {
+									"id": {
+										"type": "integer"
+									},
+									"payment_id": {
+										"type": "string"
+									},
+									"session_id": {
+										"type": "string"
+									},
+									"customer_id": {
+										"type": "string"
+									},
+									"gateway": {
+										"type": "string"
+									},
+									"amount_aud": {
+										"type": "string"
+									},
+									"gst": {
+										"type": "string"
+									},
+									"payment_mode": {
+										"type": "string"
+									},
+									"status": {
+										"type": "string"
+									},
+									"processed_at": {
+										"type": "string"
+									},
+									"created_at": {
+										"type": "string"
+									},
+									"updated_at": {
+										"type": "string"
+									}
+								}
+							}
+						},
+						"pagination": {
+							"type": "object",
+							"properties": {
+								"page": {
+									"type": "integer"
+								},
+								"page_size": {
+									"type": "integer"
+								},
+								"total": {
+									"type": "integer"
+								},
+								"total_pages": {
+									"type": "integer"
+								}
+							}
+						},
+						"ingestion_date": {
+							"type": "string"
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_adls_bronze')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_pipeline_audit_csv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_adls_bronze",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "pipeline_audit.csv",
+						"folderPath": "audit",
+						"fileSystem": "bronze"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "pipeline_name",
+						"type": "String"
+					},
+					{
+						"name": "load_type",
+						"type": "String"
+					},
+					{
+						"name": "watermark_value",
+						"type": "String"
+					},
+					{
+						"name": "ingestion_date",
+						"type": "String"
+					},
+					{
+						"name": "total_pages",
+						"type": "String"
+					},
+					{
+						"name": "status",
+						"type": "String"
+					},
+					{
+						"name": "pipeline_run_id",
+						"type": "String"
+					},
+					{
+						"name": "run_timestamp",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_adls_bronze')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_pipeline_audit_entity_csv')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "Per-entity watermark CSV. Each entity has its own file at bronze/audit/watermark_<entity_name>.csv containing exactly one data row — the latest successful watermark for that entity. This fixes the firstRowOnly bug in the shared pipeline_audit.csv where all entities read the same row 1.",
+				"linkedServiceName": {
+					"referenceName": "ls_adls_bronze",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"p_entity_name": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@concat('watermark_', dataset().p_entity_name, '.csv')",
+							"type": "Expression"
+						},
+						"folderPath": "audit",
+						"fileSystem": "bronze"
+					},
+					"columnDelimiter": ",",
+					"rowDelimiter": "\n",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_adls_bronze')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_pipeline_metadata_config')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"description": "JSON dataset pointing to pipeline_metadata_config.json in Bronze ADLS. Read by act_read_metadata Lookup Activity in pl_bronze_api_master_v4 to get the list of all enabled entities. Upload pipeline_metadata_config.json to abfss://bronze@evdatalakedev.dfs.core.windows.net/config/pipeline_metadata_config.json before first run.",
+				"linkedServiceName": {
+					"referenceName": "ls_adls_bronze",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": "pipeline_metadata_config.json",
+						"folderPath": "config",
+						"fileSystem": "bronze"
+					}
+				},
+				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_adls_bronze')]"
+			]
+		}
+	]
+}
